@@ -1,89 +1,92 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-
-const TAGLINE =
-  'Structured mentorship on real OSS projects. Transparent payouts. Live sessions. Verifiable progress.';
+import { useEffect, useRef } from 'react';
+import { CodeSyntaxAnimation } from './CodeSyntaxAnimation';
 
 export function Hero() {
-  const [typed, setTyped] = useState('');
-  const [showCursor, setShowCursor] = useState(true);
+  const heroRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    let i = 0;
-    const interval = setInterval(() => {
-      i += 1;
-      setTyped(TAGLINE.slice(0, i));
-      if (i >= TAGLINE.length) clearInterval(interval);
-    }, 28);
-    return () => clearInterval(interval);
-  }, []);
+    const hero = heroRef.current;
+    if (!hero) return;
 
-  useEffect(() => {
-    const blink = setInterval(() => setShowCursor((v) => !v), 530);
-    return () => clearInterval(blink);
+    let raf = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const y = window.scrollY;
+        const h = hero.offsetHeight || 1;
+        const progress = Math.min(y / h, 1);
+        hero.style.setProperty('--hero-scroll', `${progress}`);
+      });
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      cancelAnimationFrame(raf);
+    };
   }, []);
 
   return (
-    <section className="landing-hero">
-      <div className="terminal-window">
-        <div className="terminal-titlebar">
-          <span className="terminal-dots">
-            <i />
-            <i />
-            <i />
-          </span>
-          <span className="terminal-title">osship — tty1</span>
-        </div>
-        <div className="terminal-body">
-          <pre className="ascii-logo" aria-hidden="true">{`
-   ___  ____  ____  _   _ ___ ____  
-  / _ \\/ ___||  _ \\| | | |_ _|  _ \\ 
- | | | \\___ \\| |_) | |_| || || |_) |
- | |_| |___) |  __/|  _  || ||  __/ 
-  \\___/|____/|_|   |_| |_|___|_|    
-          `}</pre>
+    <section ref={heroRef} className="landing-hero" id="top">
+      <div className="hero-parallax-layer hero-parallax-far" />
+      <div className="hero-parallax-layer hero-parallax-mid" />
 
-          <p className="terminal-line">
-            <span className="prompt">guest@osship</span>
-            <span className="prompt-sep">:</span>
-            <span className="prompt-path">~</span>
-            <span className="prompt-sep">$</span>{' '}
-            <span className="cmd">./osship --init</span>
-          </p>
+      <div className="hero-content">
+        <p className="hero-eyebrow">
+          <span className="hero-status" />
+          Open Source Mentorship Platform
+        </p>
 
-          <h1 className="hero-heading">
-            <span className="hero-prefix">&gt; </span>
-            Open Source Mentorship
+        <div className="hero-headline">
+          <h1 className="hero-title">
+            Ship your first
+            <br />
+            <em>open source</em>
+            <br />
+            contribution
           </h1>
-
-          <p className="hero-tagline">
-            {typed}
-            <span className={`cursor ${showCursor ? 'visible' : ''}`}>█</span>
-          </p>
-
-          <div className="hero-actions">
-            <Link href="#listings" className="term-btn">
-              <span className="term-btn-prefix">$</span> browse --listings
-            </Link>
-            <Link href="/register" className="term-btn term-btn-ghost">
-              <span className="term-btn-prefix">$</span> register --new-user
-            </Link>
+          <div className="hero-visual">
+            <CodeSyntaxAnimation />
           </div>
-
-          <p className="terminal-line terminal-muted">
-            <span className="prompt">sys</span>
-            <span className="prompt-sep">@</span>
-            <span className="prompt-path">osship</span>
-            <span className="prompt-sep">$</span>{' '}
-            echo &quot;status: online&quot; &amp;&amp; uptime
-          </p>
-          <p className="terminal-output">
-            status: online &nbsp;·&nbsp; mentors ready &nbsp;·&nbsp; ledger public
-          </p>
         </div>
+
+        <p className="hero-subtitle">
+          Paid mentorship on real OSS projects. Transparent payouts.
+          Live sessions with maintainers. Verifiable progress for your portfolio.
+        </p>
+
+        <div className="hero-actions">
+          <Link href="#listings" className="landing-btn landing-btn-lg">
+            Browse listings
+          </Link>
+          <Link href="#how" className="landing-btn landing-btn-ghost landing-btn-lg">
+            How it works
+          </Link>
+        </div>
+
+        <dl className="hero-stats">
+          <div>
+            <dt>Model</dt>
+            <dd>Mentor-defined slots &amp; pricing</dd>
+          </div>
+          <div>
+            <dt>Payments</dt>
+            <dd>Public auditable ledger</dd>
+          </div>
+          <div>
+            <dt>Sessions</dt>
+            <dd>Live calls over multi-week mentorship</dd>
+          </div>
+        </dl>
       </div>
+
+      <a href="#about" className="hero-scroll-hint" aria-label="Scroll to learn more">
+        <span />
+      </a>
     </section>
   );
 }
