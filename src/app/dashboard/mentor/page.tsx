@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getStoredUser } from '@/lib/api/auth';
+import { fetchMentorListings, type Listing } from '@/lib/api/listings';
 import { fetchConnectStatus, startStripeConnect, type ConnectStatus } from '@/lib/api/payments';
 import { createSession } from '@/lib/api/sessions';
 import { applyMentor } from '@/lib/api/users';
@@ -10,13 +11,18 @@ import { applyMentor } from '@/lib/api/users';
 export default function MentorDashboard() {
   const user = getStoredUser();
   const router = useRouter();
+  const [listings, setListings] = useState<Listing[]>([]);
   const [sessionForm, setSessionForm] = useState({ listing_id: '', scheduled_at: '' });
   const [connect, setConnect] = useState<ConnectStatus | null>(null);
   const [connectLoading, setConnectLoading] = useState(false);
+  const [scheduling, setScheduling] = useState(false);
 
   useEffect(() => {
     if (user?.role === 'mentor' || user?.role === 'admin') {
       fetchConnectStatus().then(setConnect).catch(() => setConnect({ connected: false }));
+      fetchMentorListings(user.id)
+        .then(setListings)
+        .catch(() => setListings([]));
     }
   }, [user]);
 
@@ -46,11 +52,19 @@ export default function MentorDashboard() {
 
   async function handleCreateSession(e: React.FormEvent) {
     e.preventDefault();
-    await createSession({
-      listing_id: sessionForm.listing_id,
-      scheduled_at: new Date(sessionForm.scheduled_at).toISOString(),
-    });
-    alert('Session scheduled!');
+    setScheduling(true);
+    try {
+      await createSession({
+        listing_id: sessionForm.listing_id,
+        scheduled_at: new Date(sessionForm.scheduled_at).toISOString(),
+      });
+      setSessionForm({ listing_id: sessionForm.listing_id, scheduled_at: '' });
+      alert('Session scheduled!');
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to schedule session');
+    } finally {
+      setScheduling(false);
+    }
   }
 
   if (!user) return <p>Please <a href="/login">login</a>.</p>;
@@ -85,24 +99,41 @@ export default function MentorDashboard() {
         </section>
       )}
 
-      <section className="section">
-        <h2>Schedule Session</h2>
-        <form className="form" onSubmit={handleCreateSession}>
-          <input
-            placeholder="Listing ID"
-            value={sessionForm.listing_id}
-            onChange={(e) => setSessionForm({ ...sessionForm, listing_id: e.target.value })}
-            required
-          />
-          <input
-            type="datetime-local"
-            value={sessionForm.scheduled_at}
-            onChange={(e) => setSessionForm({ ...sessionForm, scheduled_at: e.target.value })}
-            required
-          />
-          <button type="submit" className="btn">Schedule</button>
-        </form>
-      </section>
+      {(user.role === 'mentor' || user.role === 'admin') && (
+        <section className="section">
+          <h2>Schedule Session</h2>
+          {listings.length === 0 ? (
+            <p className="muted">Create a listing first to schedule sessions.</p>
+          ) : (
+            <form className="form" onSubmit={handleCreateSession}>
+              <label className="register-field">
+                <span>Mentorship listing</span>
+                <select
+                  value={sessionForm.listing_id}
+                  onChange={(e) => setSessionForm({ ...sessionForm, listing_id: e.target.value })}
+                  required
+                >
+                  <option value="">Select a listing</option>
+                  {listings.map((listing) => (
+                    <option key={listing.id} value={listing.id}>
+                      {listing.oss_project_name} ({listing.filled_slots}/{listing.total_slots} filled)
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <input
+                type="datetime-local"
+                value={sessionForm.scheduled_at}
+                onChange={(e) => setSessionForm({ ...sessionForm, scheduled_at: e.target.value })}
+                required
+              />
+              <button type="submit" className="btn" disabled={scheduling}>
+                {scheduling ? 'Scheduling...' : 'Schedule'}
+              </button>
+            </form>
+          )}
+        </section>
+      )}
     </>
   );
 }

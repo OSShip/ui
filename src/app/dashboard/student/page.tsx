@@ -2,37 +2,53 @@
 
 import { useEffect, useState } from 'react';
 import { getStoredUser } from '@/lib/api/auth';
+import { fetchListing, type Listing } from '@/lib/api/listings';
 import { fetchListingSessions, joinSession, type Session } from '@/lib/api/sessions';
-import { fetchEnrollments, linkContribution } from '@/lib/api/users';
+import { fetchEnrollments, type Enrollment } from '@/lib/api/users';
+import { PRLinkForm } from '@/components/forms/PRLinkForm';
 import { JitsiEmbed } from '@/components/sessions/JitsiEmbed';
+import { SessionCalendar } from '@/components/sessions/SessionCalendar';
 
 export default function StudentDashboard() {
   const user = getStoredUser();
-  const [enrollments, setEnrollments] = useState<{ id: string; listing_id: string; status: string }[]>([]);
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [listingMap, setListingMap] = useState<Record<string, Listing>>({});
   const [sessions, setSessions] = useState<Session[]>([]);
-  const [prUrl, setPrUrl] = useState('');
   const [joinUrl, setJoinUrl] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
-    fetchEnrollments(user.id).then(setEnrollments).catch(() => {});
-  }, [user]);
 
-  async function loadSessions(listingId: string) {
-    const data = await fetchListingSessions(listingId);
-    setSessions(data);
-  }
+    fetchEnrollments(user.id)
+      .then(async (data) => {
+        setEnrollments(data);
+        const listings = await Promise.all(
+          data.map((e) => fetchListing(e.listing_id).catch(() => null)),
+        );
+        const map: Record<string, Listing> = {};
+        listings.forEach((listing) => {
+          if (listing) map[listing.id] = listing;
+        });
+        setListingMap(map);
+
+        const allSessions = await Promise.all(
+          data.map((e) => fetchListingSessions(e.listing_id).catch(() => [] as Session[])),
+        );
+        setSessions(allSessions.flat());
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [user]);
 
   async function handleJoinSession(sessionId: string) {
     const data = await joinSession(sessionId);
     setJoinUrl(data.jitsi_url);
   }
 
-  async function linkPR() {
-    await linkContribution(prUrl);
-    setPrUrl('');
-    alert('PR linked!');
-  }
+  const listingTitles = Object.fromEntries(
+    Object.entries(listingMap).map(([id, listing]) => [id, listing.oss_project_name]),
+  );
 
   if (!user) return <p>Please <a href="/login">login</a>.</p>;
 
@@ -43,39 +59,42 @@ export default function StudentDashboard() {
 
       <section className="section">
         <h2>My Enrollments</h2>
-        {enrollments.length === 0 ? <p className="muted">No enrollments yet.</p> : (
-          <ul className="stats">
-            {enrollments.map((e) => (
-              <li key={e.id}>
-                Listing {e.listing_id.slice(0, 8)}... — {e.status}
-                <button className="btn secondary" style={{ marginLeft: '1rem' }} onClick={() => loadSessions(e.listing_id)}>View sessions</button>
-              </li>
-            ))}
-          </ul>
+        {loading && <p className="muted">Loading enrollments...</p>}
+        {!loading && enrollments.length === 0 && <p className="muted">No enrollments yet.</p>}
+        {!loading && enrollments.length > 0 && (
+          <div className="grid">
+            {enrollments.map((enrollment) => {
+              const listing = listingMap[enrollment.listing_id];
+              return (
+                <div key={enrollment.id} className="card enrollment-card">
+                  <h3>{listing?.oss_project_name || 'Mentorship listing'}</h3>
+                  <p className="muted">
+                    {listing?.mentor_display_name || listing?.mentor_github_username || 'Mentor'}
+                    {' · '}
+                    {enrollment.status}
+                  </p>
+                  {listing && (
+                    <p className="muted">{listing.duration_weeks} weeks · {listing.description.slice(0, 80)}...</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         )}
       </section>
 
-      {sessions.length > 0 && (
-        <section className="section">
-          <h2>Sessions</h2>
-          {sessions.map((s) => (
-            <div key={s.id} className="card" style={{ marginBottom: '1rem' }}>
-              <p>{new Date(s.scheduled_at).toLocaleString()} — {s.status}</p>
-              <button className="btn" onClick={() => handleJoinSession(s.id)}>Join Session</button>
-            </div>
-          ))}
-        </section>
-      )}
+      <section className="section">
+        <h2>Upcoming Sessions</h2>
+        <SessionCalendar
+          sessions={sessions}
+          listingTitles={listingTitles}
+          onJoin={handleJoinSession}
+        />
+      </section>
 
       {joinUrl && <JitsiEmbed url={joinUrl} />}
 
-      <section className="section">
-        <h2>Link Contribution (PR)</h2>
-        <div className="form">
-          <input placeholder="https://github.com/org/repo/pull/123" value={prUrl} onChange={(e) => setPrUrl(e.target.value)} />
-          <button className="btn" onClick={linkPR}>Link PR</button>
-        </div>
-      </section>
+      <PRLinkForm />
     </>
   );
 }
