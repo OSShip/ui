@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { register } from '@/lib/api';
+import { register } from '@/lib/api/auth';
 import type { RobotMood } from '@/types/robot';
 
 const GuideRobot = dynamic(() => import('./GuideRobot'), {

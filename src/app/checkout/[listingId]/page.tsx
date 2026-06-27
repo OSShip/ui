@@ -4,14 +4,10 @@ import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { PayoutBreakdown } from '@/components';
-import {
-  api,
-  calculateFees,
-  fetchListing,
-  formatPrice,
-  getStoredUser,
-  Listing,
-} from '@/lib/api';
+import { getStoredUser } from '@/lib/api/auth';
+import { calculateFees, formatPrice } from '@/lib/api/client';
+import { fetchListing, type Listing } from '@/lib/api/listings';
+import { createCheckout, createEnrollment } from '@/lib/api/payments';
 
 export default function CheckoutPage() {
   const { listingId } = useParams<{ listingId: string }>();
@@ -31,21 +27,15 @@ export default function CheckoutPage() {
     setLoading(true);
     setError('');
     try {
-      const enrollment = await api<{ id: string }>('/users/enrollments', {
-        method: 'POST',
-        body: JSON.stringify({ listing_id: listing.id }),
-      });
-      const checkout = await api<{ checkout_url: string }>('/payments/checkout', {
-        method: 'POST',
-        body: JSON.stringify({
-          listing_id: listing.id,
-          student_id: user.id,
-          mentor_id: listing.mentor_id,
-          enrollment_id: enrollment.id,
-          amount_cents: listing.price_cents,
-          success_url: `${window.location.origin}/dashboard/student?paid=1`,
-          cancel_url: `${window.location.origin}/checkout/${listing.id}`,
-        }),
+      const enrollment = await createEnrollment(listing.id);
+      const checkout = await createCheckout({
+        listing_id: listing.id,
+        student_id: user.id,
+        mentor_id: listing.mentor_id,
+        enrollment_id: enrollment.id,
+        amount_cents: listing.price_cents,
+        success_url: `${window.location.origin}/dashboard/student?paid=1`,
+        cancel_url: `${window.location.origin}/checkout/${listing.id}`,
       });
       window.location.href = checkout.checkout_url;
     } catch (err) {

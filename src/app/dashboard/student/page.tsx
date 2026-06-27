@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { api, getStoredUser, Session } from '@/lib/api';
+import { getStoredUser } from '@/lib/api/auth';
+import { fetchListingSessions, joinSession, type Session } from '@/lib/api/sessions';
+import { fetchEnrollments, linkContribution } from '@/lib/api/users';
 import { JitsiEmbed } from '@/components';
 
 export default function StudentDashboard() {
@@ -13,22 +15,21 @@ export default function StudentDashboard() {
 
   useEffect(() => {
     if (!user) return;
-    api<typeof enrollments>(`/users/${user.id}/enrollments`).then(setEnrollments).catch(() => {});
+    fetchEnrollments(user.id).then(setEnrollments).catch(() => {});
   }, [user]);
 
   async function loadSessions(listingId: string) {
-    const data = await api<Session[]>(`/sessions/listings/${listingId}`);
+    const data = await fetchListingSessions(listingId);
     setSessions(data);
   }
 
-  async function joinSession(sessionId: string) {
-    const data = await api<{ jitsi_url: string }>(`/sessions/${sessionId}/join`, { method: 'POST' });
+  async function handleJoinSession(sessionId: string) {
+    const data = await joinSession(sessionId);
     setJoinUrl(data.jitsi_url);
   }
 
   async function linkPR() {
-    if (!user) return;
-    await api('/users/me/contributions', { method: 'POST', body: JSON.stringify({ pr_url: prUrl }) });
+    await linkContribution(prUrl);
     setPrUrl('');
     alert('PR linked!');
   }
@@ -60,7 +61,7 @@ export default function StudentDashboard() {
           {sessions.map((s) => (
             <div key={s.id} className="card" style={{ marginBottom: '1rem' }}>
               <p>{new Date(s.scheduled_at).toLocaleString()} — {s.status}</p>
-              <button className="btn" onClick={() => joinSession(s.id)}>Join Session</button>
+              <button className="btn" onClick={() => handleJoinSession(s.id)}>Join Session</button>
             </div>
           ))}
         </section>

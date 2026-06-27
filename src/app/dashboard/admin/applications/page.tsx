@@ -5,7 +5,7 @@ import {
   fetchMentorApplications,
   reviewMentorApplication,
   type MentorApplication,
-} from '@/lib/api';
+} from '@/lib/api/users';
 
 function GitHubSummary({ data }: { data?: MentorApplication['github_data'] }) {
   const summary = data?.summary;

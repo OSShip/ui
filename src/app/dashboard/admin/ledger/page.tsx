@@ -1,16 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { formatPrice, fetchLedger } from '@/lib/api';
-
-interface LedgerEntry {
-  id: string;
-  event_type: string;
-  gross_cents: number;
-  platform_fee_cents: number;
-  mentor_payout_cents: number;
-  created_at: string;
-}
+import { formatPrice } from '@/lib/api/client';
+import { fetchLedger, type LedgerEntry } from '@/lib/api/payments';
 
 export default function AdminLedgerPage() {
   const [listingId, setListingId] = useState('');

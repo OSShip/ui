@@ -2,15 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { api } from '@/lib/api';
+import { fetchProfile, type UserProfile } from '@/lib/api/users';
 
 export default function ProfilePage() {
   const { id } = useParams<{ id: string }>();
-  const [profile, setProfile] = useState<{ display_name?: string; bio?: string; github_username?: string; role: string } | null>(null);
-  const [contributions, setContributions] = useState<{ pr_url: string; github_verified: boolean }[]>([]);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
 
   useEffect(() => {
-    api<typeof profile>(`/users/${id}/profile`).then(setProfile).catch(() => {});
+    fetchProfile(id).then(setProfile).catch(() => {});
   }, [id]);
 
   return (

@@ -12,7 +12,7 @@ import {
 } from '@/components/LandingSections';
 import { ParallaxBackground } from '@/components/ParallaxBackground';
 import { ListingCard, LedgerSummary } from '@/components';
-import { serverFetchListings, serverFetchPayoutSummary } from '@/lib/api';
+import { serverFetchListings, serverFetchPayoutSummary } from '@/lib/api/listings';
 
 export default async function HomePage({
   searchParams,

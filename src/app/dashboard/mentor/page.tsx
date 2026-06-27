@@ -2,14 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  api,
-  applyMentor,
-  fetchConnectStatus,
-  getStoredUser,
-  startStripeConnect,
-  ConnectStatus,
-} from '@/lib/api';
+import { getStoredUser } from '@/lib/api/auth';
+import { fetchConnectStatus, startStripeConnect, type ConnectStatus } from '@/lib/api/payments';
+import { createSession } from '@/lib/api/sessions';
+import { applyMentor } from '@/lib/api/users';
 
 export default function MentorDashboard() {
   const user = getStoredUser();
@@ -48,14 +44,11 @@ export default function MentorDashboard() {
     }
   }
 
-  async function createSession(e: React.FormEvent) {
+  async function handleCreateSession(e: React.FormEvent) {
     e.preventDefault();
-    await api('/sessions', {
-      method: 'POST',
-      body: JSON.stringify({
-        listing_id: sessionForm.listing_id,
-        scheduled_at: new Date(sessionForm.scheduled_at).toISOString(),
-      }),
+    await createSession({
+      listing_id: sessionForm.listing_id,
+      scheduled_at: new Date(sessionForm.scheduled_at).toISOString(),
     });
     alert('Session scheduled!');
   }
@@ -94,7 +87,7 @@ export default function MentorDashboard() {
 
       <section className="section">
         <h2>Schedule Session</h2>
-        <form className="form" onSubmit={createSession}>
+        <form className="form" onSubmit={handleCreateSession}>
           <input
             placeholder="Listing ID"
             value={sessionForm.listing_id}

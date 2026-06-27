@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { api, createListing, getStoredUser } from '@/lib/api';
+import { getStoredUser } from '@/lib/api/auth';
+import { createListing } from '@/lib/api/listings';
 
 export default function NewListingPage() {
   const user = getStoredUser();

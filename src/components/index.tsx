@@ -1,5 +1,5 @@
-import type { Listing } from '@/lib/api';
-import { formatPrice } from '@/lib/api';
+import type { Listing } from '@/lib/api/listings';
+import { formatPrice } from '@/lib/api/client';
 import Link from 'next/link';
 
 export function ListingCard({ listing }: { listing: Listing }) {

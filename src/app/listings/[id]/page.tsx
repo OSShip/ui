@@ -1,4 +1,5 @@
-import { formatPrice, serverFetchListing } from '@/lib/api';
+import { formatPrice } from '@/lib/api/client';
+import { serverFetchListing } from '@/lib/api/listings';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
