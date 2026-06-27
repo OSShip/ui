@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { PayoutBreakdown } from '@/components';
+import { PayoutBreakdown } from '@/components/listings/PayoutBreakdown';
 import { getStoredUser } from '@/lib/api/auth';
 import { calculateFees, formatPrice } from '@/lib/api/client';
 import { fetchListing, type Listing } from '@/lib/api/listings';

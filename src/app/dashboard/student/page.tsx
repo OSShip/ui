@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { getStoredUser } from '@/lib/api/auth';
 import { fetchListingSessions, joinSession, type Session } from '@/lib/api/sessions';
 import { fetchEnrollments, linkContribution } from '@/lib/api/users';
-import { JitsiEmbed } from '@/components';
+import { JitsiEmbed } from '@/components/sessions/JitsiEmbed';
 
 export default function StudentDashboard() {
   const user = getStoredUser();
