@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
 
 export const PLATFORM_FEE_PERCENT = 10;
@@ -16,8 +18,10 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
   const res = await fetch(`${API_URL}${path}`, { ...options, headers });
+  logger.debug('api request', { path, method: options.method ?? 'GET', status: res.status });
   if (!res.ok) {
     const text = await res.text();
+    logger.warn('api error', { path, status: res.status, body: text.slice(0, 200) });
     throw new Error(text || res.statusText);
   }
   return res.json();
