@@ -43,7 +43,7 @@ export function Hero() {
 
         <div className="hero-headline">
           <h1 className="hero-title">
-            Ship your first
+            Ship your first 
             <br />
             <em>open source</em>
             <br />
