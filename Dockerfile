@@ -1,4 +1,8 @@
 FROM oven/bun:1-alpine AS builder
+
+ARG NEXT_PUBLIC_JITSI_APP_ID
+ENV NEXT_PUBLIC_JITSI_APP_ID=$NEXT_PUBLIC_JITSI_APP_ID
+
 WORKDIR /app
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile

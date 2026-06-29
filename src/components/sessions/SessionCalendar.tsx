@@ -57,7 +57,7 @@ interface SessionCalendarProps {
 
 function SessionJoinAction({
   sessionId,
-  scheduledAt,
+  // scheduledAt,
   status,
   isActive,
 }: {
@@ -66,13 +66,13 @@ function SessionJoinAction({
   status: string;
   isActive: boolean;
 }) {
-  const { canJoin } = useSessionTiming(scheduledAt);
+  // const { canJoin } = useSessionTiming(scheduledAt);
 
   if (status === 'completed' || status === 'cancelled') {
     return null;
   }
 
-  if (!isActive || !canJoin) {
+  if (!isActive) {
     return (
       <button type="button" className="btn secondary" disabled>
         Join Session
