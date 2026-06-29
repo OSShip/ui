@@ -1,10 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { useAuth } from '@/hooks/use-auth';
 import { formatPrice } from '@/lib/api/client';
 import { fetchLedger, type LedgerEntry } from '@/lib/api/payments';
+import { toastError } from '@/lib/toast';
 
 export default function AdminLedgerPage() {
+  const { user, isLoading: authLoading } = useAuth();
   const [listingId, setListingId] = useState('');
   const [entries, setEntries] = useState<LedgerEntry[]>([]);
 
@@ -13,9 +16,15 @@ export default function AdminLedgerPage() {
     try {
       const data = await fetchLedger(listingId);
       setEntries(data);
-    } catch {
+    } catch (err) {
       setEntries([]);
+      toastError(err, 'Could not load ledger');
     }
+  }
+
+  if (authLoading) return <p className="muted">Loading...</p>;
+  if (user?.role !== 'admin') {
+    return <p className="access-denied">Admin access required.</p>;
   }
 
   return (

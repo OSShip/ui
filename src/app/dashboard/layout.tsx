@@ -1,66 +1,48 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { getStoredUser, logout } from '@/lib/api/auth';
-
-interface NavLink {
-  href: string;
-  label: string;
-}
-
-function getNavLinks(role?: string): NavLink[] {
-  const links: NavLink[] = [];
-
-  if (role === 'student' || role === 'admin') {
-    links.push({ href: '/dashboard/student', label: 'Student' });
-  }
-
-  if (role === 'mentor' || role === 'admin' || role === 'student') {
-    links.push({ href: '/dashboard/mentor', label: 'Mentor' });
-  }
-
-  if (role === 'admin') {
-    links.push({ href: '/dashboard/admin/applications', label: 'Applications' });
-    links.push({ href: '/dashboard/admin/ledger', label: 'Ledger' });
-  }
-
-  return links;
-}
+import { canAccessPath, defaultDashboard } from '@/lib/auth/nav';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const user = getStoredUser();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
-  const links = getNavLinks(user?.role);
 
-  function handleLogout() {
-    logout();
-    router.push('/login');
+  useEffect(() => {
+    if (isLoading || !user) return;
+    if (!canAccessPath(user.role, pathname)) {
+      router.replace(defaultDashboard(user.role));
+    }
+  }, [isLoading, user, pathname, router]);
+
+  if (isLoading) {
+    return (
+      <div className="dashboard-layout">
+        <p className="muted">Loading session...</p>
+      </div>
+    );
   }
 
-  return (
-    <div className="dashboard-layout">
-      <nav className="dashboard-nav">
-        <div className="dashboard-nav-links">
-          {links.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={pathname === link.href || pathname.startsWith(`${link.href}/`) ? 'active' : undefined}
-            >
-              {link.label}
-            </Link>
-          ))}
-        </div>
-        <div className="dashboard-nav-meta">
-          {user && <span className="muted">{user.display_name || user.email}</span>}
-          <button type="button" className="btn secondary" onClick={handleLogout}>
-            Logout
-          </button>
-        </div>
-      </nav>
-      <div className="dashboard-content">{children}</div>
-    </div>
-  );
+  if (!isAuthenticated || !user) {
+    return (
+      <div className="dashboard-layout">
+        <p>
+          Please <Link href="/login">login</Link> to access the dashboard.
+        </p>
+      </div>
+    );
+  }
+
+  if (!canAccessPath(user.role, pathname)) {
+    return (
+      <div className="dashboard-layout">
+        <p className="muted">Redirecting...</p>
+      </div>
+    );
+  }
+
+  return <div className="dashboard-layout">{children}</div>;
 }

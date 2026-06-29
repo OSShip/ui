@@ -6,6 +6,7 @@ export interface Session {
   scheduled_at: string;
   jitsi_url: string;
   status: string;
+  is_active: boolean;
 }
 
 export async function fetchListingSessions(listingId: string): Promise<Session[]> {
@@ -19,6 +20,16 @@ export async function joinSession(sessionId: string): Promise<{ jitsi_url: strin
 export async function createSession(payload: { listing_id: string; scheduled_at: string }) {
   return api('/sessions', {
     method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateSession(
+  sessionId: string,
+  payload: { status?: string; scheduled_at?: string; is_active?: boolean },
+) {
+  return api(`/sessions/${sessionId}`, {
+    method: 'PATCH',
     body: JSON.stringify(payload),
   });
 }

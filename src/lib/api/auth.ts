@@ -1,4 +1,5 @@
-import { api, clearAuthToken, setAuthToken } from './client';
+import { api } from './client';
+import { useAuthStore } from '@/stores/auth-store';
 
 export interface User {
   id: string;
@@ -8,13 +9,16 @@ export interface User {
   github_username?: string;
 }
 
+export async function fetchMe(): Promise<User> {
+  return api<User>('/auth/me');
+}
+
 export async function login(email: string, password: string) {
   const data = await api<{ token: string; user: User }>('/auth/login', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
   });
-  setAuthToken(data.token);
-  localStorage.setItem('user', JSON.stringify(data.user));
+  useAuthStore.getState().setAuth(data.token, data.user);
   return data;
 }
 
@@ -29,18 +33,19 @@ export async function register(payload: {
     method: 'POST',
     body: JSON.stringify(payload),
   });
-  setAuthToken(data.token);
-  localStorage.setItem('user', JSON.stringify(data.user));
+  useAuthStore.getState().setAuth(data.token, data.user);
   return data;
 }
 
+/** @deprecated Prefer useAuth() hook for reactive auth state */
 export function getStoredUser(): User | null {
+  const { hydrated, user } = useAuthStore.getState();
+  if (hydrated) return user;
   if (typeof window === 'undefined') return null;
   const raw = localStorage.getItem('user');
-  return raw ? JSON.parse(raw) : null;
+  return raw ? (JSON.parse(raw) as User) : null;
 }
 
 export function logout() {
-  clearAuthToken();
-  localStorage.removeItem('user');
+  useAuthStore.getState().clearAuth();
 }

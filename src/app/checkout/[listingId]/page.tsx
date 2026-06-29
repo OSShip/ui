@@ -4,28 +4,31 @@ import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { PayoutBreakdown } from '@/components/listings/PayoutBreakdown';
-import { getStoredUser } from '@/lib/api/auth';
+import { useAuth } from '@/hooks/use-auth';
+import { useFormFeedback } from '@/hooks/use-form-feedback';
 import { calculateFees, formatPrice } from '@/lib/api/client';
 import { fetchListing, type Listing } from '@/lib/api/listings';
 import { createCheckout, createEnrollment } from '@/lib/api/payments';
+import { toastError } from '@/lib/toast';
 
 export default function CheckoutPage() {
   const { listingId } = useParams<{ listingId: string }>();
   const searchParams = useSearchParams();
   const paid = searchParams.get('paid') === '1';
   const [listing, setListing] = useState<Listing | null>(null);
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const user = getStoredUser();
+  const { user } = useAuth();
+  const { btnClass, reportError } = useFormFeedback();
 
   useEffect(() => {
-    fetchListing(listingId).then(setListing).catch(() => setError('Listing not found'));
+    fetchListing(listingId)
+      .then(setListing)
+      .catch((err) => toastError(err, 'Listing not found'));
   }, [listingId]);
 
   async function handleCheckout() {
     if (!user || !listing) return;
     setLoading(true);
-    setError('');
     try {
       const enrollment = await createEnrollment(listing.id);
       const checkout = await createCheckout({
@@ -39,7 +42,7 @@ export default function CheckoutPage() {
       });
       window.location.href = checkout.checkout_url;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Checkout failed');
+      reportError(err, 'Checkout failed');
       setLoading(false);
     }
   }
@@ -75,14 +78,13 @@ export default function CheckoutPage() {
       </div>
 
       {!user && (
-        <p className="error">
+        <p className="checkout-login-hint">
           Please <Link href={`/login?next=/checkout/${listing.id}`}>log in</Link> to enroll.
         </p>
       )}
-      {error && <p className="error">{error}</p>}
 
       <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem' }}>
-        <button className="btn" onClick={handleCheckout} disabled={!user || loading}>
+        <button type="button" className={btnClass} onClick={handleCheckout} disabled={!user || loading}>
           {loading ? 'Processing...' : `Pay ${formatPrice(listing.price_cents)}`}
         </button>
         <Link href={`/listings/${listing.id}`} className="btn secondary">Back to listing</Link>

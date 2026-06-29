@@ -1,6 +1,18 @@
 import { logger } from '@/lib/logger';
 
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
+function normalizeApiBase(raw: string): string {
+  const trimmed = raw.replace(/\/$/, '');
+  if (!trimmed) return '/api/v1';
+  if (trimmed.endsWith('/api/v1')) return trimmed;
+  if (trimmed.endsWith('/api')) return `${trimmed}/v1`;
+  // Absolute gateway URL without /api/v1 (e.g. http://host:8080)
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return `${trimmed}/api/v1`;
+  }
+  return trimmed;
+}
+
+export const API_URL = normalizeApiBase(process.env.NEXT_PUBLIC_API_URL || '/api/v1');
 
 export const PLATFORM_FEE_PERCENT = 10;
 

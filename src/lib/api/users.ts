@@ -10,6 +10,9 @@ export interface MentorApplication {
   id: string;
   user_id: string;
   status: string;
+  applicant_email?: string;
+  applicant_display_name?: string;
+  applicant_github_username?: string;
   github_data?: {
     summary?: {
       login?: string;

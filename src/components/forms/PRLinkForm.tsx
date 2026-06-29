@@ -2,24 +2,24 @@
 
 import { useState } from 'react';
 import { linkContribution } from '@/lib/api/users';
+import { useFormFeedback } from '@/hooks/use-form-feedback';
+import { toastSuccess } from '@/lib/toast';
 
 export function PRLinkForm() {
+  const { fieldClass, btnClass, formClass, reportError, clearError } = useFormFeedback();
   const [prUrl, setPrUrl] = useState('');
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
-    setError('');
-    setMessage('');
+    clearError();
     try {
       await linkContribution(prUrl);
       setPrUrl('');
-      setMessage('PR linked successfully!');
+      toastSuccess('PR linked', 'Your contribution was attached to your profile.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to link PR');
+      reportError(err, 'Failed to link PR');
     } finally {
       setSubmitting(false);
     }
@@ -29,19 +29,18 @@ export function PRLinkForm() {
     <section className="section">
       <h2>Link Contribution (PR)</h2>
       <p className="muted">Attach a merged or open pull request to track your OSS progress.</p>
-      <form className="form" onSubmit={handleSubmit}>
+      <form className={formClass} onSubmit={handleSubmit}>
         <input
           placeholder="https://github.com/org/repo/pull/123"
+          className={fieldClass}
           value={prUrl}
-          onChange={(e) => setPrUrl(e.target.value)}
+          onChange={(e) => { clearError(); setPrUrl(e.target.value); }}
           required
         />
-        <button type="submit" className="btn" disabled={submitting}>
+        <button type="submit" className={btnClass} disabled={submitting}>
           {submitting ? 'Linking...' : 'Link PR'}
         </button>
       </form>
-      {message && <p className="muted">{message}</p>}
-      {error && <p className="error">{error}</p>}
     </section>
   );
 }

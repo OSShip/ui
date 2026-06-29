@@ -1,20 +1,19 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getStoredUser } from '@/lib/api/auth';
+import { useAuth } from '@/hooks/use-auth';
 import { fetchListing, type Listing } from '@/lib/api/listings';
-import { fetchListingSessions, joinSession, type Session } from '@/lib/api/sessions';
-import { fetchEnrollments, type Enrollment } from '@/lib/api/users';
+import { fetchListingSessions, type Session } from '@/lib/api/sessions';
+import { applyMentor, fetchEnrollments, type Enrollment } from '@/lib/api/users';
 import { PRLinkForm } from '@/components/forms/PRLinkForm';
-import { JitsiEmbed } from '@/components/sessions/JitsiEmbed';
 import { SessionCalendar } from '@/components/sessions/SessionCalendar';
+import { toastError, toastSuccess } from '@/lib/toast';
 
 export default function StudentDashboard() {
-  const user = getStoredUser();
+  const { user, isLoading: authLoading } = useAuth();
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [listingMap, setListingMap] = useState<Record<string, Listing>>({});
   const [sessions, setSessions] = useState<Session[]>([]);
-  const [joinUrl, setJoinUrl] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,25 +36,38 @@ export default function StudentDashboard() {
         );
         setSessions(allSessions.flat());
       })
-      .catch(() => {})
+      .catch((err) => toastError(err, 'Failed to load enrollments'))
       .finally(() => setLoading(false));
-  }, [user]);
+  }, [user?.id]);
 
-  async function handleJoinSession(sessionId: string) {
-    const data = await joinSession(sessionId);
-    setJoinUrl(data.jitsi_url);
+  async function handleApplyMentor() {
+    try {
+      await applyMentor(user?.github_username);
+      toastSuccess('Application submitted', 'An admin will review your GitHub history.');
+    } catch (err) {
+      toastError(err, 'Application failed');
+    }
   }
 
   const listingTitles = Object.fromEntries(
     Object.entries(listingMap).map(([id, listing]) => [id, listing.oss_project_name]),
   );
 
+  if (authLoading) return <p className="muted">Loading...</p>;
   if (!user) return <p>Please <a href="/login">login</a>.</p>;
 
   return (
     <>
       <h1>Student Dashboard</h1>
       <p className="muted">Welcome, {user.display_name || user.email}</p>
+
+      {user.role === 'student' && (
+        <section className="section">
+          <button type="button" className="btn secondary" onClick={handleApplyMentor}>
+            Apply as Mentor
+          </button>
+        </section>
+      )}
 
       <section className="section">
         <h2>My Enrollments</h2>
@@ -83,16 +95,10 @@ export default function StudentDashboard() {
         )}
       </section>
 
-      <section className="section">
+      <section className="section section-upcoming-sessions">
         <h2>Upcoming Sessions</h2>
-        <SessionCalendar
-          sessions={sessions}
-          listingTitles={listingTitles}
-          onJoin={handleJoinSession}
-        />
+        <SessionCalendar sessions={sessions} listingTitles={listingTitles} />
       </section>
-
-      {joinUrl && <JitsiEmbed url={joinUrl} />}
 
       <PRLinkForm />
     </>

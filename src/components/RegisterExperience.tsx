@@ -4,8 +4,12 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import { register } from '@/lib/api/auth';
+import { applyMentor } from '@/lib/api/users';
+import { defaultDashboard } from '@/lib/auth/nav';
+import { toastError, toastSuccess } from '@/lib/toast';
 import type { RobotMood } from '@/types/robot';
 
 const GuideRobot = dynamic(() => import('./GuideRobot'), {
@@ -69,10 +73,12 @@ const slideVariants = {
 
 export function RegisterExperience() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [stepIndex, setStepIndex] = useState(0);
   const [direction, setDirection] = useState(1);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
+  const [submitError, setSubmitError] = useState(false);
+  const [pendingMentorApp, setPendingMentorApp] = useState(false);
   const [typedChars, setTypedChars] = useState(0);
   const [form, setForm] = useState({
     email: '',
@@ -102,7 +108,7 @@ export function RegisterExperience() {
     if (stepIndex < STEPS.length - 1) {
       setDirection(1);
       setStepIndex((i) => i + 1);
-      setError('');
+      setSubmitError(false);
     }
   }, [stepIndex]);
 
@@ -110,7 +116,7 @@ export function RegisterExperience() {
     if (stepIndex > 0 && step.id !== 'launch') {
       setDirection(-1);
       setStepIndex((i) => i - 1);
-      setError('');
+      setSubmitError(false);
     }
   }, [stepIndex, step.id]);
 
@@ -121,6 +127,9 @@ export function RegisterExperience() {
       case 'role':
         return form.role !== '';
       case 'profile':
+        if (form.role === 'mentor') {
+          return form.display_name.trim().length >= 2 && form.github_username.trim().length >= 1;
+        }
         return form.display_name.trim().length >= 2;
       case 'credentials':
         return (
@@ -137,23 +146,34 @@ export function RegisterExperience() {
 
   async function handleLaunch() {
     setSubmitting(true);
-    setError('');
+    setSubmitError(false);
+    const wantsMentor = form.role === 'mentor';
     try {
       const { user } = await register({
         email: form.email,
         password: form.password,
-        role: form.role,
+        role: 'student',
         display_name: form.display_name,
         github_username: form.github_username || undefined,
       });
+
+      if (wantsMentor) {
+        await applyMentor(form.github_username || undefined);
+        setPendingMentorApp(true);
+        toastSuccess('Account created', 'Your mentor application was submitted for admin review.');
+      } else {
+        toastSuccess('Account created', 'Welcome aboard!');
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
       setDirection(1);
       setStepIndex(STEPS.length - 1);
       setTimeout(() => {
-        if (user.role === 'mentor') router.push('/dashboard/mentor');
-        else router.push('/dashboard/student');
-      }, 3200);
+        router.push(defaultDashboard(user.role));
+      }, wantsMentor ? 4200 : 3200);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed');
+      setSubmitError(true);
+      toastError(err, 'Registration failed');
     } finally {
       setSubmitting(false);
     }
@@ -329,7 +349,10 @@ export function RegisterExperience() {
                         />
                       </label>
                       <label className="register-field">
-                        <span>GitHub username <small>(optional)</small></span>
+                        <span>
+                          GitHub username{' '}
+                          <small>({form.role === 'mentor' ? 'required for mentor application' : 'optional'})</small>
+                        </span>
                         <input
                           type="text"
                           placeholder="alexchen"
@@ -352,7 +375,8 @@ export function RegisterExperience() {
                           type="email"
                           placeholder="you@university.edu"
                           value={form.email}
-                          onChange={(e) => setForm({ ...form, email: e.target.value })}
+                          onChange={(e) => { setSubmitError(false); setForm({ ...form, email: e.target.value }); }}
+                          className={submitError ? 'input-error' : undefined}
                           autoFocus
                         />
                       </label>
@@ -362,7 +386,8 @@ export function RegisterExperience() {
                           type="password"
                           placeholder="Min. 6 characters"
                           value={form.password}
-                          onChange={(e) => setForm({ ...form, password: e.target.value })}
+                          onChange={(e) => { setSubmitError(false); setForm({ ...form, password: e.target.value }); }}
+                          className={submitError ? 'input-error' : undefined}
                         />
                       </label>
                       <label className="register-field">
@@ -371,7 +396,8 @@ export function RegisterExperience() {
                           type="password"
                           placeholder="Repeat password"
                           value={form.confirmPassword}
-                          onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+                          onChange={(e) => { setSubmitError(false); setForm({ ...form, confirmPassword: e.target.value }); }}
+                          className={submitError ? 'input-error' : undefined}
                         />
                         {form.confirmPassword && form.password !== form.confirmPassword && (
                           <span className="register-field-hint register-field-hint-error">
@@ -390,7 +416,9 @@ export function RegisterExperience() {
                     <dl className="register-review-list">
                       <div>
                         <dt>Role</dt>
-                        <dd>{form.role === 'student' ? 'Student' : 'Mentor'}</dd>
+                        <dd>
+                          {form.role === 'student' ? 'Student' : 'Mentor (application pending review)'}
+                        </dd>
                       </div>
                       <div>
                         <dt>Display name</dt>
@@ -407,7 +435,11 @@ export function RegisterExperience() {
                         <dd>{form.email}</dd>
                       </div>
                     </dl>
-                    {error && <p className="register-error">{error}</p>}
+                    {form.role === 'mentor' && (
+                      <p className="register-field-hint">
+                        Mentor accounts require admin approval. You&apos;ll start as a student until reviewed.
+                      </p>
+                    )}
                   </div>
                 )}
 
@@ -431,13 +463,15 @@ export function RegisterExperience() {
                       animate={{ opacity: 1 }}
                       transition={{ delay: 0.4 }}
                     >
-                      Redirecting to your dashboard…
+                      {pendingMentorApp
+                        ? 'Mentor application submitted — redirecting to your student dashboard…'
+                        : 'Redirecting to your dashboard…'}
                     </motion.p>
                     <motion.div
                       className="register-launch-bar"
                       initial={{ width: 0 }}
                       animate={{ width: '100%' }}
-                      transition={{ duration: 2.8, ease: 'easeInOut' }}
+                      transition={{ duration: pendingMentorApp ? 3.8 : 2.8, ease: 'easeInOut' }}
                     />
                   </div>
                 )}
@@ -460,7 +494,7 @@ export function RegisterExperience() {
                 )}
                 <button
                   type="button"
-                  className="register-btn register-btn-primary"
+                  className={`register-btn register-btn-primary${submitError ? ' register-btn-error' : ''}`}
                   onClick={handlePrimaryAction}
                   disabled={!canProceed() || submitting}
                 >
