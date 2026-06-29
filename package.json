@@ -11,6 +11,7 @@
     "lint": "bunx --bun next lint"
   },
   "dependencies": {
+    "@jitsi/react-sdk": "^1.4.4",
     "@sentry/nextjs": "^10.62.0",
     "@tanstack/react-query": "^5.101.2",
     "date-fns": "^4.4.0",
