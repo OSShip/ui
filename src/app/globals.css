@@ -32,6 +32,7 @@ body {
   line-height: 1.6;
   min-height: 100vh;
   position: relative;
+  padding-bottom: 2.25rem;
 }
 
 body::before {
@@ -968,6 +969,51 @@ nav a:hover {
 
 .footer-nav a { color: var(--term-text-dim); }
 .footer-nav a:hover { color: var(--term-green); }
+
+/* ── Site footer (sticky attribution) ── */
+.site-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background: rgba(10, 16, 10, 0.82);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--term-border);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.35);
+}
+
+.site-footer-text {
+  font-size: 0.75rem;
+  color: var(--term-text);
+  letter-spacing: 0.05em;
+}
+
+.site-footer-text::before {
+  content: '// ';
+  color: var(--term-text-dim);
+}
+
+.site-footer-heart {
+  color: var(--term-amber);
+  font-style: italic;
+  text-shadow: 0 0 10px rgba(255, 176, 0, 0.35);
+}
+
+.site-footer a {
+  color: var(--term-green-muted);
+  font-weight: 500;
+  transition: color 0.15s, text-shadow 0.15s;
+}
+
+.site-footer a:hover {
+  color: var(--term-green);
+  text-shadow: 0 0 8px var(--term-glow-strong);
+}
 
 /* ── Responsive ── */
 @media (max-width: 768px) {
