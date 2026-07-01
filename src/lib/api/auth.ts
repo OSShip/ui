@@ -1,5 +1,7 @@
-import { api } from './client';
+import { api, API_URL, setAuthToken } from './client';
 import { useAuthStore } from '@/stores/auth-store';
+
+export const GITHUB_OAUTH_URL = `${API_URL}/auth/oauth/github`;
 
 export interface User {
   id: string;
@@ -48,4 +50,11 @@ export function getStoredUser(): User | null {
 
 export function logout() {
   useAuthStore.getState().clearAuth();
+}
+
+export async function completeGitHubOAuth(token: string): Promise<User> {
+  setAuthToken(token);
+  const user = await fetchMe();
+  useAuthStore.getState().setAuth(token, user);
+  return user;
 }

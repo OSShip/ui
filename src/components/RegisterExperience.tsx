@@ -10,6 +10,7 @@ import { register } from '@/lib/api/auth';
 import { applyMentor } from '@/lib/api/users';
 import { defaultDashboard } from '@/lib/auth/nav';
 import { toastError, toastSuccess } from '@/lib/toast';
+import { GitHubOAuthButton } from '@/components/GitHubOAuthButton';
 import type { RobotMood } from '@/types/robot';
 
 const GuideRobot = dynamic(() => import('./GuideRobot'), {
@@ -288,6 +289,10 @@ export function RegisterExperience() {
                       <li>Secure your credentials</li>
                       <li>Review and launch</li>
                     </ul>
+                    <div className="oauth-divider oauth-divider-compact" role="separator">
+                      <span>or</span>
+                    </div>
+                    <GitHubOAuthButton label="Sign up with GitHub" disabled={submitting} />
                   </div>
                 )}
 

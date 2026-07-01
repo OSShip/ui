@@ -9,6 +9,7 @@ import { motion } from 'framer-motion';
 import { login } from '@/lib/api/auth';
 import { defaultDashboard } from '@/lib/auth/nav';
 import { useFormFeedback } from '@/hooks/use-form-feedback';
+import { GitHubOAuthButton } from '@/components/GitHubOAuthButton';
 import type { RobotMood } from '@/types/robot';
 
 const GuideRobot = dynamic(() => import('./GuideRobot'), {
@@ -44,7 +45,9 @@ export function LoginExperience() {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const next = searchParams.get('next');
+  const oauthError = searchParams.get('error') === 'github';
   const { hasError, reportError, clearError } = useFormFeedback();
+  const showError = hasError || oauthError;
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -55,12 +58,14 @@ export function LoginExperience() {
 
   const messageKey: MessageKey = submitting
     ? 'submitting'
-    : hasError
+    : showError
       ? 'error'
       : focusedField ?? 'idle';
 
-  const message = MESSAGES[messageKey];
-  const mood = moodForState(focusedField, submitting, hasError);
+  const message = showError && oauthError
+    ? 'GitHub sign-in did not complete. Try again or use email and password below.'
+    : MESSAGES[messageKey];
+  const mood = moodForState(focusedField, submitting, showError);
   const coverEyes = focusedField === 'password' && !showPassword;
 
   const canSubmit = useMemo(
@@ -152,7 +157,7 @@ export function LoginExperience() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.55, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
           >
-            <div className={`register-step-content login-form-card${hasError ? ' login-form-card-error' : ''}`}>
+            <div className={`register-step-content login-form-card${showError ? ' login-form-card-error' : ''}`}>
               <p className="register-eyebrow">Sign in</p>
               <h1>
                 Welcome
@@ -175,7 +180,7 @@ export function LoginExperience() {
                       autoComplete="email"
                       autoFocus
                       disabled={submitting}
-                      className={hasError ? 'input-error' : undefined}
+                      className={showError ? 'input-error' : undefined}
                       onFocus={() => setFocusedField('email')}
                       onBlur={() => setFocusedField((f) => (f === 'email' ? null : f))}
                       onChange={(e) => {
@@ -196,7 +201,7 @@ export function LoginExperience() {
                         value={password}
                         autoComplete="current-password"
                         disabled={submitting}
-                        className={hasError ? 'input-error' : undefined}
+                        className={showError ? 'input-error' : undefined}
                         onFocus={() => setFocusedField('password')}
                         onBlur={() => setFocusedField((f) => (f === 'password' ? null : f))}
                         onChange={(e) => {
@@ -219,16 +224,18 @@ export function LoginExperience() {
                   </label>
                 </div>
 
-                {hasError && (
+                {showError && (
                   <p className="login-inline-error" role="alert">
-                    Invalid email or password. Please try again.
+                    {oauthError
+                      ? 'GitHub sign-in failed. Try again or use your email and password.'
+                      : 'Invalid email or password. Please try again.'}
                   </p>
                 )}
 
                 <div className="login-actions">
                   <button
                     type="submit"
-                    className={`register-btn register-btn-primary login-submit${hasError ? ' register-btn-error' : ''}`}
+                    className={`register-btn register-btn-primary login-submit${showError ? ' register-btn-error' : ''}`}
                     disabled={!canSubmit}
                   >
                     {submitting ? (
@@ -238,6 +245,12 @@ export function LoginExperience() {
                     )}
                   </button>
                 </div>
+
+                <div className="oauth-divider" role="separator">
+                  <span>or</span>
+                </div>
+
+                <GitHubOAuthButton disabled={submitting} />
               </form>
 
               <p className="login-footer-hint">
