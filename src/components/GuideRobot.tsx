@@ -16,15 +16,18 @@ const MOOD_COLORS: Record<RobotMood, { eye: number; glow: number; antenna: numbe
 interface GuideRobotProps {
   mood: RobotMood;
   isSpeaking?: boolean;
+  coverEyes?: boolean;
 }
 
-function GuideRobot({ mood, isSpeaking = false }: GuideRobotProps) {
+function GuideRobot({ mood, isSpeaking = false, coverEyes = false }: GuideRobotProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const moodRef = useRef(mood);
   const speakingRef = useRef(isSpeaking);
+  const coverEyesRef = useRef(coverEyes);
 
   moodRef.current = mood;
   speakingRef.current = isSpeaking;
+  coverEyesRef.current = coverEyes;
 
   useEffect(() => {
     const container = containerRef.current;
@@ -231,6 +234,7 @@ function GuideRobot({ mood, isSpeaking = false }: GuideRobotProps) {
       }
 
       const speaking = speakingRef.current;
+      const covering = coverEyesRef.current;
 
       robot.position.y = Math.sin(t * 1.4) * 0.06;
       robot.rotation.y = Math.sin(t * 0.5) * 0.08;
@@ -238,10 +242,18 @@ function GuideRobot({ mood, isSpeaking = false }: GuideRobotProps) {
       head.rotation.x = moodTilt[currentMood] + Math.sin(t * 2) * 0.02;
       head.rotation.z = Math.sin(t * 0.8) * 0.04;
 
-      leftArm.rotation.z = 0.25 + Math.sin(t * 1.2) * 0.08;
-      rightArm.rotation.z = -0.25 - Math.sin(t * 1.2 + 1) * 0.08;
+      const idleLeftZ = 0.25 + Math.sin(t * 1.2) * 0.08;
+      const idleRightZ = -0.25 - Math.sin(t * 1.2 + 1) * 0.08;
+      const leftTargetZ = covering ? 2.15 : idleLeftZ;
+      const rightTargetZ = covering ? -2.15 : idleRightZ;
+      const armTargetX = covering ? -1.2 : 0;
 
-      if (speaking) {
+      leftArm.rotation.z = THREE.MathUtils.lerp(leftArm.rotation.z, leftTargetZ, 0.1);
+      rightArm.rotation.z = THREE.MathUtils.lerp(rightArm.rotation.z, rightTargetZ, 0.1);
+      leftArm.rotation.x = THREE.MathUtils.lerp(leftArm.rotation.x, armTargetX, 0.1);
+      rightArm.rotation.x = THREE.MathUtils.lerp(rightArm.rotation.x, armTargetX, 0.1);
+
+      if (speaking && !covering) {
         rightArm.rotation.z = -0.6 + Math.sin(t * 8) * 0.25;
       }
 
@@ -264,18 +276,25 @@ function GuideRobot({ mood, isSpeaking = false }: GuideRobotProps) {
       }
 
       blinkTimer += delta;
-      if (blinkTimer > 2.8 + Math.random() * 2) {
+      if (covering) {
+        leftEye.scale.y = 0.1;
+        rightEye.scale.y = 0.1;
+        isBlinking = false;
+      } else if (blinkTimer > 2.8 + Math.random() * 2) {
         isBlinking = true;
         blinkTimer = 0;
       }
-      if (isBlinking) {
-        const scale = Math.max(0.1, Math.sin(blinkTimer * 20));
-        leftEye.scale.y = scale;
-        rightEye.scale.y = scale;
-        if (blinkTimer > 0.15) isBlinking = false;
-      } else {
-        leftEye.scale.y = 1;
-        rightEye.scale.y = 1;
+
+      if (!covering) {
+        if (isBlinking) {
+          const scale = Math.max(0.1, Math.sin(blinkTimer * 20));
+          leftEye.scale.y = scale;
+          rightEye.scale.y = scale;
+          if (blinkTimer > 0.15) isBlinking = false;
+        } else {
+          leftEye.scale.y = 1;
+          rightEye.scale.y = 1;
+        }
       }
 
       const pulse = 0.7 + Math.sin(t * 3) * 0.3;

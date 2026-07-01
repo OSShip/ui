@@ -1,10 +1,10 @@
 import { Suspense } from 'react';
-import LoginPage from './LoginForm';
+import { LoginExperience } from '@/components/LoginExperience';
 
 export default function Page() {
   return (
-    <Suspense fallback={<p className="muted">Loading...</p>}>
-      <LoginPage />
+    <Suspense fallback={<p className="muted login-suspense">Loading…</p>}>
+      <LoginExperience />
     </Suspense>
   );
 }
