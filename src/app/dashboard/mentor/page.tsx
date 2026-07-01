@@ -8,6 +8,7 @@ import { fetchMentorListings, type Listing } from '@/lib/api/listings';
 import { fetchConnectStatus, startStripeConnect, type ConnectStatus } from '@/lib/api/payments';
 import { createSession, fetchListingSessions, updateSession, type Session } from '@/lib/api/sessions';
 import { ListingSelect } from '@/components/listings/ListingSelect';
+import { MentorListingCard } from '@/components/listings/MentorListingCard';
 import { SessionCalendar } from '@/components/sessions/SessionCalendar';
 import { SessionSchedulePicker } from '@/components/sessions/SessionSchedulePicker';
 import { toastError, toastSuccess } from '@/lib/toast';
@@ -17,6 +18,7 @@ export default function MentorDashboard() {
   const router = useRouter();
   const formFeedback = useFormFeedback();
   const [listings, setListings] = useState<Listing[]>([]);
+  const [listingsLoading, setListingsLoading] = useState(true);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [listingId, setListingId] = useState('');
   const [scheduledAt, setScheduledAt] = useState('');
@@ -25,6 +27,26 @@ export default function MentorDashboard() {
   const [scheduling, setScheduling] = useState(false);
   const [sessionsLoading, setSessionsLoading] = useState(true);
   const [actingSessionId, setActingSessionId] = useState<string | null>(null);
+
+  const loadListings = useCallback(async () => {
+    if (!user?.id || (user.role !== 'mentor' && user.role !== 'admin')) {
+      setListings([]);
+      setListingsLoading(false);
+      return [];
+    }
+
+    setListingsLoading(true);
+    try {
+      const data = await fetchMentorListings(user.id);
+      setListings(data);
+      return data;
+    } catch {
+      setListings([]);
+      return [];
+    } finally {
+      setListingsLoading(false);
+    }
+  }, [user?.id, user?.role]);
 
   const loadSessions = useCallback(async (mentorListings: Listing[]) => {
     if (mentorListings.length === 0) {
@@ -46,18 +68,9 @@ export default function MentorDashboard() {
   useEffect(() => {
     if (user?.role === 'mentor' || user?.role === 'admin') {
       fetchConnectStatus().then(setConnect).catch(() => setConnect({ connected: false }));
-      fetchMentorListings(user.id)
-        .then((data) => {
-          setListings(data);
-          return loadSessions(data);
-        })
-        .catch(() => {
-          setListings([]);
-          setSessions([]);
-          setSessionsLoading(false);
-        });
+      loadListings().then(loadSessions);
     }
-  }, [user?.id, user?.role, loadSessions]);
+  }, [user?.role, loadListings, loadSessions]);
 
   async function handleStripeConnect() {
     setConnectLoading(true);
@@ -156,10 +169,39 @@ export default function MentorDashboard() {
       <h1>Mentor Dashboard</h1>
       <p className="muted">Welcome, {user.display_name || user.email}</p>
 
-      <section className="section">
-        <button className="btn" onClick={() => router.push('/dashboard/mentor/listings/new')}>
-          Create Listing
-        </button>
+      <section className="section mentor-listings-header">
+        <div className="mentor-listings-header-row">
+          <div>
+            <h2>My Listings</h2>
+            <p className="muted">Mentorship offerings published under your account.</p>
+          </div>
+          <button className="btn" onClick={() => router.push('/dashboard/mentor/listings/new')}>
+            Create Listing
+          </button>
+        </div>
+
+        {listingsLoading && <p className="muted">Loading listings…</p>}
+
+        {!listingsLoading && listings.length === 0 && (
+          <div className="mentor-listings-empty card">
+            <p className="muted">You don&apos;t have any active listings yet.</p>
+            <button
+              type="button"
+              className="btn secondary"
+              onClick={() => router.push('/dashboard/mentor/listings/new')}
+            >
+              Publish your first listing
+            </button>
+          </div>
+        )}
+
+        {!listingsLoading && listings.length > 0 && (
+          <div className="grid mentor-listings-grid">
+            {listings.map((listing) => (
+              <MentorListingCard key={listing.id} listing={listing} />
+            ))}
+          </div>
+        )}
       </section>
 
       {(user.role === 'mentor' || user.role === 'admin') && (

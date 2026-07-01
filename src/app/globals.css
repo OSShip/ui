@@ -2352,6 +2352,136 @@ html { scroll-behavior: smooth; }
   min-height: 40vh;
 }
 
+/* Mentor listings dashboard */
+.mentor-listings-header-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.mentor-listings-header-row h2 {
+  margin: 0 0 0.35rem;
+}
+
+.mentor-listings-header-row .muted {
+  margin: 0;
+}
+
+.mentor-listings-grid {
+  margin-top: 0.5rem;
+}
+
+.mentor-listings-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.5rem;
+}
+
+.mentor-listing-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  height: 100%;
+}
+
+.mentor-listing-card:hover {
+  border-color: var(--term-green-dim);
+}
+
+.mentor-listing-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.mentor-listing-card-head h3 {
+  margin: 0;
+  flex: 1;
+}
+
+.mentor-listing-status {
+  flex-shrink: 0;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid var(--term-border);
+  color: var(--term-text-dim);
+}
+
+.mentor-listing-status-active {
+  color: var(--term-green);
+  border-color: var(--term-green-dim);
+  background: rgba(57, 255, 20, 0.06);
+}
+
+.mentor-listing-desc {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  flex: 1;
+}
+
+.mentor-listing-meta {
+  margin-top: 0;
+}
+
+.mentor-listing-slots {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.mentor-listing-slots-bar {
+  height: 4px;
+  background: var(--term-border);
+  overflow: hidden;
+}
+
+.mentor-listing-slots-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--term-green-dim), var(--term-green));
+  transition: width 0.3s ease;
+}
+
+.mentor-listing-slots-label {
+  font-size: 0.68rem;
+  color: var(--term-text-dim);
+}
+
+.mentor-listing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  margin-top: 0.25rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--term-border);
+}
+
+.mentor-listing-link {
+  font-size: 0.78rem;
+  color: var(--term-green-muted);
+}
+
+.mentor-listing-link:hover {
+  color: var(--term-green);
+}
+
+.mentor-listing-repo {
+  font-size: 0.78rem;
+  color: var(--term-text-dim);
+}
+
+.mentor-listing-repo:hover {
+  color: var(--term-amber);
+}
+
 .session-calendar-day {
   margin-bottom: 1.5rem;
 }
