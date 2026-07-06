@@ -11,12 +11,15 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN bun run build
 
 FROM oven/bun:1-alpine AS runner
+RUN addgroup -g 1001 -S osship \
+    && adduser -u 1001 -S osship -G osship
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder --chown=osship:osship /app/public ./public
+COPY --from=builder --chown=osship:osship /app/.next/standalone ./
+COPY --from=builder --chown=osship:osship /app/.next/static ./.next/static
+USER 1001
 EXPOSE 3000
 ENV PORT=3000
 ENV INTERNAL_API_URL=http://gateway:8080/api/v1
